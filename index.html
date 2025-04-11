@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dan's Football</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        #game {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 600px;
+            max-height: 600px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        #field {
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                #4CAF50, #4CAF50 5px, 
+                #45a049 5px, #45a049 10px
+            );
+            position: relative;
+        }
+        
+        .yard-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .endzone {
+            position: absolute;
+            width: 100%;
+            height: 10%;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        #scrimmage {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 5;
+        }
+        
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .x {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: black;
+        }
+        
+        .o {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+        
+        .qb {
+            border: 3px solid gold;
+        }
+        
+        .has-ball {
+            box-shadow: 0 0 10px 3px gold;
+        }
+        
+        .blocked {
+            opacity: 0.5;
+        }
+        
+        #football {
+            position: absolute;
+            width: 20px;
+            height: 12px;
+            background-color: brown;
+            border-radius: 40%;
+            z-index: 15;
+            display: none;
+        }
+        
+        .route {
+            position: absolute;
+            height: 2px;
+            background-color: rgba(255, 255, 255, 0.7);
+            transform-origin: 0 0;
+            z-index: 5;
+        }
+        
+        .target {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 5;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #countdown {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        
+        #score {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            font-size: 18px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        
+        #downs {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            font-size: 18px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+        
+        #pause {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 18px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            pointer-events: auto;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .screen h1 {
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .screen p {
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #pause-screen {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="field"></div>
+        <div id="football"></div>
+        
+        <div id="ui">
+            <div id="countdown">8</div>
+            <div id="timer">0:00</div>
+            <div id="score">Score: 0 | INT: 0</div>
+            <div id="downs">Down: 1 | To Go: 10</div>
+            <div id="message"></div>
+            <button id="pause">Pause</button>
+        </div>
+        
+        <div id="start-screen" class="screen">
+            <h1>Dan's Football</h1>
+            <p>Select game time:</p>
+            <div>
+                <button class="btn" data-time="1">1 Minute</button>
+                <button class="btn" data-time="2">2 Minutes</button>
+                <button class="btn" data-time="3">3 Minutes</button>
+                <button class="btn" data-time="4">4 Minutes</button>
+                <button class="btn" data-time="5">5 Minutes</button>
+            </div>
+        </div>
+        
+        <div id="pause-screen" class="screen">
+            <h1>Game Paused</h1>
+            <button class="btn" id="resume">Resume Game</button>
+            <button class="btn" id="restart">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Simple game engine
+        const Game = {
+            // DOM elements
+            field: document.getElementById('field'),
+            football: document.getElementById('football'),
+            countdown: document.getElementById('countdown'),
+            timer: document.getElementById('timer'),
+            score: document.getElementById('score'),
+            downs: document.getElementById('downs'),
+            message: document.getElementById('message'),
+            startScreen: document.getElementById('start-screen'),
+            pauseScreen: document.getElementById('pause-screen'),
+            
+            // Game state
+            state: {
+                gameTime: 180, // 3 minutes default
+                score: 0,
+                interceptions: 0,
+                down: 1,
+                toGo: 10,
+                scrimmage: 80, // 20 yard line
+                playing: false,
+                paused: false,
+                countdownValue: 8,
+                countdownPaused: false,
+                directControlActive: false // Flag for direct ball carrier control
+            },
+            
+            // Players
+            players: {
+                x: [],
+                o: [],
+                qb: null,
+                ballCarrier: null
+            },
+            
+            // Timers and animation
+            timers: {
+                game: null,
+                countdown: null,
+                animation: null,
+                throw: null,
+                message: null
+            },
+            
+            // Initialize the game
+            init: function() {
+                // Create field elements
+                this.createField();
+                
+                // Set up event listeners
+                this.setupEvents();
+                
+                // Initialize players
+                this.resetPlayers();
+            },
+            
+            // Create field elements
+            createField: function() {
+                // Create yard lines
+                for (let i = 1; i < 10; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'yard-line';
+                    line.style.top = `${i * 10}%`;
+                    this.field.appendChild(line);
+                }
+                
+                // Create endzones
+                const topEndzone = document.createElement('div');
+                topEndzone.className = 'endzone';
+                topEndzone.style.top = '0';
+                this.field.appendChild(topEndzone);
+                
+                const bottomEndzone = document.createElement('div');
+                bottomEndzone.className = 'endzone';
+                bottomEndzone.style.bottom = '0';
+                this.field.appendChild(bottomEndzone);
+                
+                // Create scrimmage line
+                const scrimmage = document.createElement('div');
+                scrimmage.id = 'scrimmage';
+                scrimmage.style.top = `${this.state.scrimmage}%`;
+                this.field.appendChild(scrimmage);
+            },
+            
+            // Set up event listeners
+            setupEvents: function() {
+                // Time selection buttons
+                document.querySelectorAll('#start-screen .btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const minutes = parseInt(btn.dataset.time);
+                        this.state.gameTime = minutes * 60;
+                        this.startScreen.style.display = 'none';
+                        this.startGame();
+                        
+                        // Mark as active
+                        document.querySelectorAll('#start-screen .btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    });
+                });
+                
+                // Pause button
+                document.getElementById('pause').addEventListener('click', () => {
+                    this.pauseGame();
+                });
+                
+                // Resume button
+                document.getElementById('resume').addEventListener('click', () => {
+                    this.resumeGame();
+                });
+                
+                // Restart button
+                document.getElementById('restart').addEventListener('click', () => {
+                    this.restartGame();
+                });
+                
+                // Field click for redirecting players
+                this.field.addEventListener('click', (e) => {
+                    if (!this.state.playing || this.state.paused) return;
+                    
+                    // Ignore if clicked on a player
+                    if (e.target.classList && e.target.classList.contains('player')) {
+                        return;
+                    }
+                    
+                    // Get click position
+                    const rect = this.field.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    
+                    // Find closest X player (not ball carrier)
+                    let closest = null;
+                    let minDist = Infinity;
+                    
+                    this.players.x.forEach(player => {
+                        if (player === this.players.ballCarrier) return;
+                        
+                        const playerX = parseFloat(player.style.left);
+                        const playerY = parseFloat(player.style.top);
+                        const dist = Math.sqrt((x - playerX) ** 2 + (y - playerY) ** 2);
+                        
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = player;
+                        }
+                    });
+                    
+                    // Update target for closest player
+                    if (closest) {
+                        closest.dataset.targetX = x;
+                        closest.dataset.targetY = y;
+                    }
+                });
+                
+                // Prevent iOS scrolling/bouncing
+                document.addEventListener('touchmove', (e) => {
+                    if (e.target.closest('#game')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            },
+            
+            // Reset players to starting positions
+            resetPlayers: function() {
+                // Clear existing players
+                document.querySelectorAll('.player').forEach(p => p.remove());
+                document.querySelectorAll('.route').forEach(r => r.remove());
+                document.querySelectorAll('.target').forEach(t => t.remove());
+                
+                this.players.x = [];
+                this.players.o = [];
+                
+                // Create X players (offense)
+                for (let i = 0; i < 7; i++) {
+                    const player = document.createElement('div');
+                    player.className = 'player x';
+                    player.textContent = 'X';
+                    
+                    // Position players in formation
+                    if (i === 0) { // QB
+                        player.classList.add('qb');
+                        player.classList.add('has-ball');
+                        player.style.left = '50%';
+                        player.style.top = `${this.state.scrimmage + 10}%`;
+                        this.players.qb = player;
+                        this.players.ballCarrier = player;
+                    } else if (i < 6) { // Line
+                        player.style.left = `${20 + (i-1) * 15}%`;
+                        player.style.top = `${this.state.scrimmage}%`;
+                    } else { // Receiver
+                        player.style.left = '80%';
+                        player.style.top = `${this.state.scrimmage}%`;
+                    }
+                    
+                    // Store initial position
+                    player.dataset.startX = parseFloat(player.style.left);
+                    player.dataset.startY = parseFloat(player.style.top);
+                    
+                    // Initialize target position to be the same as start position
+                    player.dataset.targetX = player.dataset.startX;
+                    player.dataset.targetY = player.dataset.startY;
+                    
+                    this.field.appendChild(player);
+                    this.setupPlayerDrag(player);
+                    this.players.x.push(player);
+                }
+                
+                // Create O players (defense)
+                for (let i = 0; i < 6; i++) {
+                    const player = document.createElement('div');
+                    player.className = 'player o';
+                    player.textContent = 'O';
+                    
+                    // Position players in formation
+                    if (i < 4) { // Line
+                        player.style.left = `${30 + i * 15}%`;
+                        player.style.top = `${this.state.scrimmage - 5}%`;
+                    } else { // Secondary
+                        player.style.left = `${30 + (i-4) * 40}%`;
+                        player.style.top = `${this.state.scrimmage - 15}%`;
+                    }
+                    
+                    this.field.appendChild(player);
+                    this.players.o.push(player);
+                }
+            },
+            
+            // Set up player dragging
+            setupPlayerDrag: function(player) {
+                let isDragging = false;
+                let offsetX, offsetY;
+                
+                const dragStart = (e) => {
+                    if (this.state.paused) return;
+                    
+                    // Get pointer position
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                    
+                    if (this.state.playing) {
+                        // During play
+                        if (player === this.players.ballCarrier) {
+                            // Allow direct control of ball carrier
+                            isDragging = true;
+                            this.state.directControlActive = true;
+                            
+                            const rect = player.getBoundingClientRect();
+                            offsetX = clientX - rect.left;
+                            offsetY = clientY - rect.top;
+                        } else if (player.classList.contains('x')) {
+                            // Handle passing
+                            if (this.players.ballCarrier === this.players.qb) {
+                                // Start throw timer
+                                const throwStart = Date.now();
+                                const receiver = player;
+                                
+                                this.timers.throw = setTimeout(() => {
+                                    // Bullet pass
+                                    this.throwBall(receiver, true);
+                                }, 1500);
+                                
+                                // Setup for lob pass
+                                const throwLob = () => {
+                                    if (Date.now() - throwStart < 1500) {
+                                        clearTimeout(this.timers.throw);
+                                        this.throwBall(receiver, false);
+                                    }
+                                    document.removeEventListener('mouseup', throwLob);
+                                    document.removeEventListener('touchend', throwLob);
+                                };
+                                
+                                document.addEventListener('mouseup', throwLob);
+                                document.addEventListener('touchend', throwLob);
+                            }
+                        }
+                    } else {
+                        // Before play starts
+                        isDragging = true;
+                        this.state.countdownPaused = true;
+                        
+                        const rect = player.getBoundingClientRect();
+                        offsetX = clientX - rect.left;
+                        offsetY = clientY - rect.top;
+                        
+                        // Remove existing route visualization
+                        const existingRoute = document.querySelector(`.route[data-player="${player.dataset.index}"]`);
+                        if (existingRoute) existingRoute.remove();
+                        
+                        const existingTarget = document.querySelector(`.target[data-player="${player.dataset.index}"]`);
+                        if (existingTarget) existingTarget.remove();
+                    }
+                };
+                
+                const dragMove = (e) => {
+                    if (!isDragging) return;
+                    
+                    // Get pointer position
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                    
+                    if (e.touches) e.preventDefault(); // Prevent scrolling
+                    
+                    const rect = this.field.getBoundingClientRect();
+                    
+                    // Calculate new position
+                    let newX = ((clientX - rect.left - offsetX) / rect.width) * 100;
+                    let newY = ((clientY - rect.top - offsetY) / rect.height) * 100;
+                    
+                    // Constrain to field
+                    newX = Math.max(0, Math.min(newX, 100 - 5));
+                    newY = Math.max(0, Math.min(newY, 100 - 5));
+                    
+                    if (this.state.playing) {
+                        if (player === this.players.ballCarrier && this.state.directControlActive) {
+                            // Directly move the ball carrier
+                            player.style.left = `${newX}%`;
+                            player.style.top = `${newY}%`;
+                            
+                            // Check if QB crossed line of scrimmage
+                            if (player === this.players.qb) {
+                                const qbY = parseFloat(player.style.top);
+                                player.dataset.crossedScrimmage = qbY < this.state.scrimmage;
+                            }
+                        } else {
+                            // For other players, set a new target
+                            player.dataset.targetX = newX;
+                            player.dataset.targetY = newY;
+                        }
+                    } else {
+                        // Before play, set target position
+                        player.dataset.targetX = newX;
+                        player.dataset.targetY = newY;
+                        
+                        // Create or update target marker
+                        let target = document.querySelector(`.target[data-player="${player.dataset.index}"]`);
+                        if (!target) {
+                            target = document.createElement('div');
+                            target.className = 'target';
+                            target.dataset.player = player.dataset.index;
+                            this.field.appendChild(target);
+                        }
+                        
+                        target.style.left = `${newX}%`;
+                        target.style.top = `${newY}%`;
+                        
+                        // Draw route line
+                        this.drawRoute(player);
+                    }
+                };
+                
+                const dragEnd = () => {
+                    isDragging = false;
+                    this.state.directControlActive = false;
+                    this.state.countdownPaused = false;
+                };
+                
+                // Add event listeners
+                player.addEventListener('mousedown', dragStart);
+                player.addEventListener('touchstart', dragStart, { passive: false });
+                
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('touchmove', dragMove, { passive: false });
+                
+                document.addEventListener('mouseup', dragEnd);
+                document.addEventListener('touchend', dragEnd);
+                
+                // Store index for identification
+                player.dataset.index = this.players.x.length + this.players.o.length;
+            },
+            
+            // Draw route line
+            drawRoute: function(player) {
+                // Remove existing route
+                const existingRoute = document.querySelector(`.route[data-player="${player.dataset.index}"]`);
+                if (existingRoute) existingRoute.remove();
+                
+                // Create new route line
+                const route = document.createElement('div');
+                route.className = 'route';
+                route.dataset.player = player.dataset.index;
+                
+                // Calculate line properties
+                const startX = parseFloat(player.dataset.startX);
+                const startY = parseFloat(player.dataset.startY);
+                const targetX = parseFloat(player.dataset.targetX);
+                const targetY = parseFloat(player.dataset.targetY);
+                
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                // Set line style
+                route.style.width = `${length}%`;
+                route.style.transform = `translate(${startX}%, ${startY}%) rotate(${angle}deg)`;
+                
+                this.field.appendChild(route);
+            },
+            
+            // Start the game
+            startGame: function() {
+                // Reset game state
+                this.state.score = 0;
+                this.state.interceptions = 0;
+                this.state.down = 1;
+                this.state.toGo = 10;
+                this.state.scrimmage = 80;
+                
+                // Update UI
+                this.updateScore();
+                this.updateDowns();
+                document.getElementById('scrimmage').style.top = `${this.state.scrimmage}%`;
+                
+                // Start game timer
+                this.updateTimer();
+                this.timers.game = setInterval(() => this.updateTimer(), 1000);
+                
+                // Reset players and start countdown
+                this.resetPlayers();
+                this.startCountdown();
+            },
+            
+            // Start countdown to play
+            startCountdown: function() {
+                this.state.countdownValue = 8;
+                this.countdown.textContent = this.state.countdownValue;
+                
+                // Clear any existing timer
+                if (this.timers.countdown) clearInterval(this.timers.countdown);
+                
+                this.timers.countdown = setInterval(() => {
+                    if (!this.state.countdownPaused && !this.state.paused) {
+                        this.state.countdownValue--;
+                        this.countdown.textContent = this.state.countdownValue;
+                        
+                        if (this.state.countdownValue <= 0) {
+                            clearInterval(this.timers.countdown);
+                            this.startPlay();
+                        }
+                    }
+                }, 1000);
+            },
+            
+            // Start the play
+            startPlay: function() {
+                this.countdown.textContent = "GO!";
+                this.state.playing = true;
+                
+                // Start game loop
+                cancelAnimationFrame(this.timers.animation);
+                this.gameLoop();
+            },
+            
+            // Game loop
+            gameLoop: function() {
+                if (!this.state.playing || this.state.paused) {
+                    if (this.state.playing && !this.state.paused) {
+                        this.timers.animation = requestAnimationFrame(() => this.gameLoop());
+                    }
+                    return;
+                }
+                
+                // Move offensive players
+                this.moveOffensivePlayers();
+                
+                // Move defensive players
+                this.moveDefensivePlayers();
+                
+                // Check for collisions
+                this.checkCollisions();
+                
+                // Check for touchdown
+                if (this.players.ballCarrier && parseFloat(this.players.ballCarrier.style.top) < 10) {
+                    this.state.score += 7;
+                    this.updateScore();
+                    this.showMessage("TOUCHDOWN!");
+                    
+                    setTimeout(() => {
+                        this.resetAfterPlay(true);
+                    }, 1500);
+                    
+                    return;
+                }
+                
+                // Continue loop
+                this.timers.animation = requestAnimationFrame(() => this.gameLoop());
+            },
+            
+            // Move offensive players
+            moveOffensivePlayers: function() {
+                this.players.x.forEach(player => {
+                    if (player.classList.contains('blocked')) return;
+                    
+                    // Skip if under direct control
+                    if (player === this.players.ballCarrier && this.state.directControlActive) return;
+                    
+                    const currentX = parseFloat(player.style.left);
+                    const currentY = parseFloat(player.style.top);
+                    const targetX = parseFloat(player.dataset.targetX);
+                    const targetY = parseFloat(player.dataset.targetY);
+                    
+                    // Calculate distance to target
+                    const dx = targetX - currentX;
+                    const dy = targetY - currentY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0.1) {
+                        // Move player gradually toward target
+                        const speed = 0.3;
+                        const moveX = (dx / distance) * Math.min(speed, distance);
+                        const moveY = (dy / distance) * Math.min(speed, distance);
+                        
+                        player.style.left = `${currentX + moveX}%`;
+                        player.style.top = `${currentY + moveY}%`;
+                    }
+                });
+            },
+            
+            // Move defensive players
+            moveDefensivePlayers: function() {
+                if (!this.players.ballCarrier) return;
+                
+                const targetX = parseFloat(this.players.ballCarrier.style.left);
+                const targetY = parseFloat(this.players.ballCarrier.style.top);
+                
+                this.players.o.forEach(defender => {
+                    if (defender.classList.contains('blocked')) return;
+                    
+                    const defenderX = parseFloat(defender.style.left);
+                    const defenderY = parseFloat(defender.style.top);
+                    
+                    // Calculate direction to ball carrier
+                    const dx = targetX - defenderX;
+                    const dy = targetY - defenderY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0.1) {
+                        // Move defender gradually toward ball carrier
+                        const speed = 0.08; // Slow enough to be fair
+                        const moveX = (dx / distance) * Math.min(speed, distance);
+                        const moveY = (dy / distance) * Math.min(speed, distance);
+                        
+                        defender.style.left = `${defenderX + moveX}%`;
+                        defender.style.top = `${defenderY + moveY}%`;
+                        
+                        // Check for tackle
+                        if (distance < 5 && this.players.ballCarrier) {
+                            this.tackleBallCarrier();
+                        }
+                    }
+                });
+            },
+            
+            // Check for collisions between players
+            checkCollisions: function() {
+                this.players.x.forEach(xPlayer => {
+                    if (xPlayer.classList.contains('blocked')) return;
+                    
+                    const xX = parseFloat(xPlayer.style.left);
+                    const xY = parseFloat(xPlayer.style.top);
+                    
+                    this.players.o.forEach(oPlayer => {
+                        if (oPlayer.classList.contains('blocked')) return;
+                        
+                        const oX = parseFloat(oPlayer.style.left);
+                        const oY = parseFloat(oPlayer.style.top);
+                        
+                        // Calculate distance
+                        const dx = xX - oX;
+                        const dy = xY - oY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // If close enough, block each other
+                        if (distance < 8) {
+                            // Block defender more than offensive player
+                            if (!oPlayer.classList.contains('blocked')) {
+                                oPlayer.classList.add('blocked');
+                                
+                                // Push defender away
+                                const pushX = dx / distance * 2;
+                                const pushY = dy / distance * 2;
+                                oPlayer.style.left = `${oX + pushX}%`;
+                                oPlayer.style.top = `${oY + pushY}%`;
+                                
+                                // Recover after delay
+                                setTimeout(() => {
+                                    oPlayer.classList.remove('blocked');
+                                }, 300);
+                            }
+                            
+                            // Slightly affect offensive player
+                            if (!xPlayer.classList.contains('blocked') && xPlayer !== this.players.ballCarrier) {
+                                xPlayer.classList.add('blocked');
+                                
+                                // Push offensive player slightly
+                                const pushX = -dx / distance;
+                                const pushY = -dy / distance;
+                                xPlayer.style.left = `${xX + pushX}%`;
+                                xPlayer.style.top = `${xY + pushY}%`;
+                                
+                                // Recover after delay
+                                setTimeout(() => {
+                                    xPlayer.classList.remove('blocked');
+                                }, 300);
+                            }
+                        }
+                    });
+                });
+            },
+            
+            // Tackle the ball carrier
+            tackleBallCarrier: function() {
+                this.showMessage("TACKLE!");
+                
+                // Calculate yards gained
+                const scrimmageY = this.state.scrimmage;
+                const ballY = parseFloat(this.players.ballCarrier.style.top);
+                const yardsGained = Math.round((scrimmageY - ballY) / 2);
+                
+                this.state.toGo -= yardsGained;
+                
+                if (yardsGained > 0) {
+                    this.showMessage(`Gain of ${yardsGained} yards!`);
+                } else if (yardsGained < 0) {
+                    this.showMessage(`Loss of ${-yardsGained} yards!`);
+                } else {
+                    this.showMessage("No gain!");
+                }
+                
+                // Update line of scrimmage
+                this.state.scrimmage = Math.max(10, this.state.scrimmage - yardsGained);
+                
+                // Update downs
+                if (this.state.toGo <= 0) {
+                    // First down
+                    this.state.down = 1;
+                    this.state.toGo = 10;
+                    this.showMessage("FIRST DOWN!");
+                } else {
+                    this.state.down++;
+                    if (this.state.down > 4) {
+                        // Turnover on downs
+                        this.showMessage("TURNOVER ON DOWNS!");
+                        this.state.down = 1;
+                        this.state.toGo = 10;
+                        this.state.scrimmage = 80; // Reset to 20-yard line
+                    }
+                }
+                
+                this.updateDowns();
+                
+                // End play
+                setTimeout(() => {
+                    this.resetAfterPlay(false);
+                }, 1500);
+            },
+            
+            // Throw the ball to a receiver
+            throwBall: function(receiver, isBullet) {
+                if (this.players.ballCarrier !== this.players.qb) return;
+                
+                // Check if QB has crossed scrimmage line
+                if (this.players.qb.dataset.crossedScrimmage === 'true') {
+                    this.showMessage("Can't throw forward!");
+                    return;
+                }
+                
+                const qb = this.players.qb;
+                qb.classList.remove('has-ball');
+                
+                // Position football at QB
+                this.football.style.display = 'block';
+                this.football.style.left = `${parseFloat(qb.style.left) + 1.5}%`;
+                this.football.style.top = `${parseFloat(qb.style.top) + 1.5}%`;
+                
+                // Check for interception
+                const interception = this.checkForInterception(qb, receiver, isBullet);
+                
+                if (interception) {
+                    // Animate ball to defender
+                    this.animateFootball(qb, interception, () => {
+                        this.football.style.display = 'none';
+                        this.state.interceptions++;
+                        this.updateScore();
+                        this.showMessage("INTERCEPTION!");
+                        
+                        interception.classList.add('has-ball');
+                        this.players.ballCarrier = interception;
+                    });
+                } else {
+                    // Animate ball to receiver
+                    this.animateFootball(qb, receiver, () => {
+                        this.football.style.display = 'none';
+                        receiver.classList.add('has-ball');
+                        this.players.ballCarrier = receiver;
+                        
+                        // Check for touchdown
+                        if (parseFloat(receiver.style.top) < 10) {
+                            this.state.score += 7;
+                            this.updateScore();
+                            this.showMessage("TOUCHDOWN!");
+                            
+                            setTimeout(() => {
+                                this.resetAfterPlay(true);
+                            }, 1500);
+                        }
+                    });
+                }
+            },
+            
+            // Check for interception
+            checkForInterception: function(qb, receiver, isBullet) {
+                if (!isBullet) {
+                    // Lob passes are only intercepted if defender is very close to QB
+                    for (let defender of this.players.o) {
+                        if (defender.classList.contains('blocked')) continue;
+                        
+                        const qbX = parseFloat(qb.style.left);
+                        const qbY = parseFloat(qb.style.top);
+                        const defX = parseFloat(defender.style.left);
+                        const defY = parseFloat(defender.style.top);
+                        
+                        const distance = Math.sqrt((qbX - defX) ** 2 + (qbY - defY) ** 2);
+                        if (distance < 10) {
+                            return defender;
+                        }
+                    }
+                    return null;
+                } else {
+                    // Bullet passes are intercepted if defender is in the path
+                    const qbX = parseFloat(qb.style.left);
+                    const qbY = parseFloat(qb.style.top);
+                    const recX = parseFloat(receiver.style.left);
+                    const recY = parseFloat(receiver.style.top);
+                    
+                    for (let defender of this.players.o) {
+                        if (defender.classList.contains('blocked')) continue;
+                        
+                        const defX = parseFloat(defender.style.left);
+                        const defY = parseFloat(defender.style.top);
+                        
+                        // Check if defender is in path
+                        if (this.isInPath(qbX, qbY, recX, recY, defX, defY, 10)) {
+                            return defender;
+                        }
+                    }
+                    return null;
+                }
+            },
+            
+            // Check if point is in path of throw
+            isInPath: function(x1, y1, x2, y2, px, py, tolerance) {
+                // Calculate distance from point to line
+                const A = px - x1;
+                const B = py - y1;
+                const C = x2 - x1;
+                const D = y2 - y1;
+                
+                const dot = A * C + B * D;
+                const len_sq = C * C + D * D;
+                let param = -1;
+                
+                if (len_sq != 0) param = dot / len_sq;
+                
+                let xx, yy;
+                
+                if (param < 0) {
+                    xx = x1;
+                    yy = y1;
+                } else if (param > 1) {
+                    xx = x2;
+                    yy = y2;
+                } else {
+                    xx = x1 + param * C;
+                    yy = y1 + param * D;
+                }
+                
+                const dx = px - xx;
+                const dy = py - yy;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                return distance < tolerance && param >= 0 && param <= 1;
+            },
+            
+            // Animate football from one player to another
+            animateFootball: function(from, to, callback) {
+                const fromX = parseFloat(from.style.left);
+                const fromY = parseFloat(from.style.top);
+                const toX = parseFloat(to.style.left);
+                const toY = parseFloat(to.style.top);
+                
+                const duration = 1000; // ms
+                const startTime = Date.now();
+                
+                const animate = () => {
+                    if (this.state.paused) {
+                        requestAnimationFrame(animate);
+                        return;
+                    }
+                    
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Arc effect
+                    const yProgress = -4 * progress * (progress - 1);
+                    
+                    const currentX = fromX + (toX - fromX) * progress;
+                    const currentY = fromY + (toY - fromY) * progress - yProgress * 30;
+                    
+                    this.football.style.left = `${currentX}%`;
+                    this.football.style.top = `${currentY}%`;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        if (callback) callback();
+                    }
+                };
+                
+                requestAnimationFrame(animate);
+            },
+            
+            // Reset after play
+            resetAfterPlay: function(touchdown) {
+                // Cancel animations
+                cancelAnimationFrame(this.timers.animation);
+                
+                this.state.playing = false;
+                this.players.ballCarrier = null;
+                
+                // Clear routes
+                document.querySelectorAll('.route').forEach(r => r.remove());
+                document.querySelectorAll('.target').forEach(t => t.remove());
+                
+                // Update line of scrimmage
+                if (touchdown) {
+                    this.state.scrimmage = 80; // Reset to 20-yard line
+                    this.state.down = 1;
+                    this.state.toGo = 10;
+                }
+                
+                document.getElementById('scrimmage').style.top = `${this.state.scrimmage}%`;
+                
+                // Reset players
+                this.resetPlayers();
+                
+                // Start new countdown
+                this.countdown.textContent = "8";
+                this.startCountdown();
+                
+                this.updateDowns();
+            },
+            
+            // Show message
+            showMessage: function(text) {
+                this.message.textContent = text;
+                this.message.style.display = 'block';
+                
+                // Clear existing timeout
+                clearTimeout(this.timers.message);
+                
+                this.timers.message = setTimeout(() => {
+                    this.message.style.display = 'none';
+                }, 1500);
+            },
+            
+            // Update score display
+            updateScore: function() {
+                this.score.textContent = `Score: ${this.state.score} | INT: ${this.state.interceptions}`;
+            },
+            
+            // Update downs display
+            updateDowns: function() {
+                this.downs.textContent = `Down: ${this.state.down} | To Go: ${this.state.toGo}`;
+            },
+            
+            // Update game timer
+            updateTimer: function() {
+                if (this.state.paused) return;
+                
+                const minutes = Math.floor(this.state.gameTime / 60);
+                const seconds = this.state.gameTime % 60;
+                this.timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                this.state.gameTime--;
+                if (this.state.gameTime < 0) {clearInterval(this.timers.game);
+                    this.endGame();
+                }
+            },
+            
+            // End game
+            endGame: function() {
+                this.state.playing = false;
+                cancelAnimationFrame(this.timers.animation);
+                this.showMessage(`GAME OVER! Final Score: ${this.state.score}`);
+                
+                setTimeout(() => {
+                    this.startScreen.style.display = 'flex';
+                }, 2000);
+            },
+            
+            // Pause game
+            pauseGame: function() {
+                this.state.paused = true;
+                this.pauseScreen.style.display = 'flex';
+            },
+            
+            // Resume game
+            resumeGame: function() {
+                this.state.paused = false;
+                this.pauseScreen.style.display = 'none';
+                
+                if (this.state.playing) {
+                    this.gameLoop();
+                }
+            },
+            
+            // Restart game
+            restartGame: function() {
+                // Reset game state
+                this.state.score = 0;
+                this.state.interceptions = 0;
+                this.state.down = 1;
+                this.state.toGo = 10;
+                this.state.scrimmage = 80;
+                this.state.directControlActive = false;
+                
+                // Update UI
+                this.updateScore();
+                this.updateDowns();
+                document.getElementById('scrimmage').style.top = `${this.state.scrimmage}%`;
+                
+                // Clear timers
+                clearInterval(this.timers.game);
+                clearInterval(this.timers.countdown);
+                cancelAnimationFrame(this.timers.animation);
+                
+                // Restart game timer
+                const activeBtn = document.querySelector('#start-screen .btn.active');
+                this.state.gameTime = activeBtn ? parseInt(activeBtn.dataset.time) * 60 : 180;
+                
+                this.updateTimer();
+                this.timers.game = setInterval(() => this.updateTimer(), 1000);
+                
+                // Reset players and start countdown
+                this.resetPlayers();
+                this.startCountdown();
+                
+                // Close pause screen
+                this.resumeGame();
+            }
+        };
+        
+        // Initialize the game
+        Game.init();
+        
+        // Add instructions
+        const instructions = document.createElement('div');
+        instructions.id = 'instructions';
+        instructions.innerHTML = 'Drag players to set routes. Tap receivers to throw. Drag ball carrier to run.';
+        instructions.style.position = 'absolute';
+        instructions.style.bottom = '10px';
+        instructions.style.right = '10px';
+        instructions.style.fontSize = '14px';
+        instructions.style.color = 'white';
+        instructions.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        instructions.style.padding = '5px 10px';
+        instructions.style.borderRadius = '5px';
+        instructions.style.pointerEvents = 'none';
+        document.getElementById('ui').appendChild(instructions);
+        
+        // Prevent context menu on right-click
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Fix for iOS touch events
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('gesturechange', e => e.preventDefault());
+        document.addEventListener('gestureend', e => e.preventDefault());
+    </script>
+</body>
+</html>
